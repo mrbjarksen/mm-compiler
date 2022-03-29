@@ -1,0 +1,35 @@
+cabal-version:      2.4
+name:               mm-compiler
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+
+-- The license under which the package is released.
+-- license:
+author:             Bjarki Baldursson Harksen
+maintainer:         bjarki31@gmail.com
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
+
+executable mm-compiler
+    main-is:            Main.hs
+    hs-source-dirs:     src
+    default-language:   Haskell2010
+
+    -- Modules included in this executable, other than Main.
+    other-modules:     Compiler.Lexer, Compiler.Parser, Compiler.Utils
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:      base ^>=4.15.1.0, mtl, text, array, containers
+    build-tool-depends: alex:alex, happy:happy

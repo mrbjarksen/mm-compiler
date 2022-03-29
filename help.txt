@@ -1,0 +1,23 @@
+Usage:
+
+    mm-compiler {<option>|<file>} ...
+
+Lexes, parses and/or compiles a MicroMorpho program into Morpho machine code.
+Results are written to standard output.
+
+Arguments starting with `-' are treated as options, all others as file paths.
+If no files are present, or conflicting options are detected, an error is thrown.
+If more than one file is given, their individual results are concatenated.
+
+Options:
+    -h, --help                  Show this help text and exit.
+                                If this option is present, all other arguments
+                                are ignored.
+    --show={tokens|ast|masm}    Choose what output to show. Defaults to `masm'.
+                                    tokens: Lexes input and outputs the resulting
+                                            tokens along with their positions and
+                                            matching lexemes.
+                                    ast:    Parses input and outputs the resulting
+                                            syntax tree.
+                                    masm:   Compiles input to Morpho machine code
+                                            and outputs the result.
