@@ -53,7 +53,9 @@ import Control.Monad.Except (throwError)
     ';'      { DELIM ';'  }
     '='      { DELIM '='  }
 
---%right '('
+%right 'return'
+%right '='
+%right '('
 %left  '||'
 %left  '&&'
 %right '!'
@@ -64,7 +66,7 @@ import Control.Monad.Except (throwError)
 %left  OP5
 %left  OP6
 %left  OP7
-%right UNARY
+%right UNOP
 
 %%
 
@@ -74,13 +76,12 @@ program :: { Program }
     : stmts { Program $1 }
 
 stmts :: { [Stmt] }
-    : stmt scs stmts { $1 : $3 }
-    | stmt scs       { [$1]    }
-
-stmt :: { Stmt }
-    : fundecl     { $1      }
-    | vardecl ';' { $1      }
-    | expr ';'    { Expr $1 }
+    : fundecl scs stmts     {      $1 : $3 }
+    | vardecl scs ';' stmts {      $1 : $4 }
+    | expr scs ';' stmts    { Expr $1 : $4 }
+    | fundecl scs           {      [$1 ]    }
+    | vardecl scs           {      [$1]    }
+    | expr scs              { [Expr $1]    }
 
 scs :: { () }
     : scs ';'     { () }
@@ -111,12 +112,9 @@ close :: { Int }
 ---- Declerations ----
 
 fundecl :: { Stmt }
-    : fun_NAME names_body   {% gets (numVars . scopeStack) >>= \num ->
-                               return (FunDecl (fst $1) (fst $2) num (snd $2))
-                            }
-    | fun_OPNAME names_body {% reportErrorIf (fst $2 `notElem` [1,2]) (OpDefBadNumParams (snd $1) (fst $2)) 
-                               >> gets (numVars . scopeStack) >>= \num -> 
-                                  return (FunDecl (fst $1) (fst $2) num (snd $2))
+    : fun_NAME names_body   {% getNumVars >>= \num -> return (FunDecl (fst $1) (fst $2) num (snd $2)) }
+    | fun_OPNAME names_body {% reportErrorIf (fst $2 `notElem` [1, 2]) (OpDefBadNumParams (snd $1) (fst $2)) 
+                               >> getNumVars >>= \num -> return (FunDecl (fst $1) (fst $2) num (snd $2))
                             }
 
 fun_NAME :: { (Maybe Pos, Name) }
@@ -140,12 +138,6 @@ declOrInit :: { VarDecl }
 
 ---- Expressions ----
 
-expr :: { Expr }
-    : 'return' expr { Return $2                                                   }
-    | NAME '=' expr {% findVarC $1 >>= \pos -> return (Store pos $3)              }
-    | 'go' body     {% gets (numVars . scopeStack) >>= \num -> return (Go num $2) }
-    | opexpr        { $1                                                          }
-
 OPNAME :: { String }
     : OP1 { $1 }
     | OP2 { $1 }
@@ -155,32 +147,36 @@ OPNAME :: { String }
     | OP6 { $1 }
     | OP7 { $1 }
 
-opexpr :: { Expr }
-    : opexpr '||' opexpr      { Or  $1 $3           }
-    | opexpr '&&' opexpr      { And $1 $3           }
-    | '!' opexpr              { Not $2              }
-    | opexpr OPNAME opexpr    {% mkCall $2 [$1, $3] }
-    | OPNAME expr %prec UNARY {% mkCall $1 [$2]     }
-    | smallexpr               { $1                  }
-
-smallexpr :: { Expr }
-    : NAME                      {% findVarC $1 >>= \pos -> return (Fetch pos) }
-    | NAME '(' exprs ')'        {% mkCall $1 $3 }
-    --| expr '(' exprs ')'        { CallCls $1 $3 }
-    | LITERAL                   { Literal $1 }
-    | '(' expr ')'              { $2 }
-    | ifcase elseifs elsecase   { IfElse $1 $2 $3 }
-    | 'while' '(' expr ')' body { While  $3 $5 }
-    | 'fun' names_body          {% gets (numVars . scopeStack) >>= \num ->
-                                   return (Closure num (fst $2) (snd $2))
-                                }
+expr :: { Expr                                                                                   }
+    : 'return' expr             { Return $2                                                      }
+    | NAME '=' expr             {% findVarC $1 >>= \pos -> return (Store pos $3)                 }
+    | 'go' body                 {% getNumVars  >>= \num -> return (Go num $2)                    }
+    | expr '||' expr            { Or  $1 $3                                                      }
+    | expr '&&' expr            { And $1 $3                                                      }
+    | '!' expr                  { Not $2                                                         }
+    | expr OP1 expr             {% mkCall $2 [$1, $3]                                            }
+    | expr OP2 expr             {% mkCall $2 [$1, $3]                                            }
+    | expr OP3 expr             {% mkCall $2 [$1, $3]                                            }
+    | expr OP4 expr             {% mkCall $2 [$1, $3]                                            }
+    | expr OP5 expr             {% mkCall $2 [$1, $3]                                            }
+    | expr OP6 expr             {% mkCall $2 [$1, $3]                                            }
+    | expr OP7 expr             {% mkCall $2 [$1, $3]                                            }
+    | OPNAME expr %prec UNOP    {% mkCall $1 [$2]                                                }
+    | NAME                      {% findVarC $1 >>= \pos -> return (Fetch pos)                    }
+    | NAME '(' exprs ')'        {% mkCall $1 $3                                                  }
+    | expr '(' exprs ')'        { CallCls $1 $3                                                  }
+    | LITERAL                   { Literal $1                                                     }
+    | '(' expr ')'              { $2                                                             }
+    | ifcase elseifs elsecase   { IfElse $1 $2 $3                                                }
+    | 'while' '(' expr ')' body { While  $3 $5                                                   }
+    | 'fun' names_body          {% getNumVars >>= \num -> return (Closure num (fst $2) (snd $2)) }
 
 ifcase :: { IfCase }
     : 'if' '(' expr ')' body { If $3 $5 }
 
 elseifs :: { [ElseIfCase] }
     : 'elsif' '(' expr ')' body elseifs { (If $3 $5) : $6 }
-    | {- empty -}                       { [] }
+    | {- empty -}                       { []              }
 
 elsecase :: { ElseCase }
     : 'else' body { Else $2 }
@@ -188,7 +184,8 @@ elsecase :: { ElseCase }
 
 exprs :: { [Expr] }
     : expr ',' exprs { $1 : $3 }
-    | {- empty -}    { [] }
+    | expr           { [$1]    }
+    | {- empty -}    { []      }
 
 {
 

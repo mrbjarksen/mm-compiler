@@ -1,2 +1,3 @@
 dist-newstyle
 cabal.project.*
+Parser.hs

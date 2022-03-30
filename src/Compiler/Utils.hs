@@ -4,7 +4,7 @@ import Data.Text (Text)
 import qualified Data.Text.IO as TIO
 import Data.Word (Word8)
 
-import Control.Monad.State (StateT, get, put)
+import Control.Monad.State (StateT, get, gets, put)
 
 import qualified Data.Map as M
 import Data.Maybe (listToMaybe, mapMaybe)
@@ -181,6 +181,9 @@ endComment = get >>= \state ->
 setSymPos :: FilePos -> Compiler ()
 setSymPos pos = get >>= \state ->
                 put $ state { symPos = pos }
+
+getNumVars :: Compiler Int
+getNumVars = gets (numVars . scopeStack)
 
 ---- Error handling ----
 

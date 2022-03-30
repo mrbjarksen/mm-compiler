@@ -26,6 +26,7 @@ $opelem  = [\*\/\%\+\-\<\>\!\=\&\|\:\?\~\^]
 @strelem = [^\"\\] | \\[btnfr\"\'\\] | (\\[0-3][0-7][0-7]) | \\[0-7][0-7] | \\[0-7]
 @string  = \"([^\"\\] | @strelem)*\"
 @char    = \'([^\'\\] | @strelem)\'
+@literal = @string | @char | @float | @int | null | true | false
 @op1     = [\?\~\^]$opelem*
 @op2     = \:$opelem*
 @op3     = \|$opelem*
@@ -34,7 +35,6 @@ $opelem  = [\*\/\%\+\-\<\>\!\=\&\|\:\?\~\^]
 @op6     = [\+\-]$opelem*
 @op7     = [\*\/\%]$opelem*
 @name    = [_a-zA-Z][_a-zA-Z0-9]*
-@literal = @string | @char | @float | @int | null | true | false
 
 tokens :-
 
@@ -55,6 +55,8 @@ tokens :-
     <0>     "||"     { mkTok  OR      }
     <0>     "&&"     { mkTok  AND     }
     <0>     "!"      { mkTok  NOT     }
+    <0>     $delim   { mkTokC DELIM   }
+    <0>     @literal { mkTokS LITERAL }
     <0>     @op1     { mkTokS OP1     }
     <0>     @op2     { mkTokS OP2     }
     <0>     @op3     { mkTokS OP3     }
@@ -63,8 +65,6 @@ tokens :-
     <0>     @op6     { mkTokS OP6     }
     <0>     @op7     { mkTokS OP7     }
     <0>     @name    { mkTokS NAME    }
-    <0>     @literal { mkTokS LITERAL }
-    <0>     $delim   { mkTokC DELIM   }
 
 {
 
@@ -113,11 +113,11 @@ utf8Encode' c = case go (ord c) of (x, xs) -> (fromIntegral x, map fromIntegral 
 mkTok :: Token -> String -> Compiler Token
 mkTok = const . return
 
-mkTokS :: (String -> Token) -> String -> Compiler Token
-mkTokS = (return.)
-
 mkTokC :: (Char -> Token) -> String -> Compiler Token
 mkTokC tok = return . tok . head
+
+mkTokS :: (String -> Token) -> String -> Compiler Token
+mkTokS = (return.)
 
 getToken :: Compiler Token
 getToken = get >>= \state@(CState pos _ txt cd _ _ _) ->
