@@ -20,6 +20,7 @@ import Control.Monad.Except (throwError)
 
 %error     { parseError }
 %errorhandlertype explist
+%expect 1
 
 %monad { Compiler               }
 %lexer { (getToken >>=) } { EOF }
@@ -90,9 +91,12 @@ scs :: { () }
 ---- Body ----
 
 names :: { [Name] }
-    : names ',' NAME { $3 : $1 }
-    | NAME           { [$1]    }
-    | {- empty -}    { []      }
+    : names1         { $1 }
+    | {- empty -}    { [] }
+
+names1 :: { [Name] }
+    : names1 ',' NAME { $3 : $1 }
+    | NAME            { [$1]    }
 
 body :: { Body }
     : open stmts close { Body $2 $3 }
@@ -183,9 +187,12 @@ elsecase :: { ElseCase }
     | {- empty -} { NoElse  }
 
 exprs :: { [Expr] }
-    : expr ',' exprs { $1 : $3 }
-    | expr           { [$1]    }
-    | {- empty -}    { []      }
+    : exprs1      { $1 }
+    | {- empty -} { [] }
+
+exprs1 :: { [Expr] }
+    : expr ',' exprs1 { $1 : $3 }
+    | expr            { [$1]    }
 
 {
 

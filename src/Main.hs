@@ -44,9 +44,9 @@ showAST :: FilePath -> IO ()
 showAST fp = do
     result <- runStateT getSyntaxTree <$> compilerStart fp
     case (\(a, s) -> (a, errors s)) <$> result of
-      Left  err       -> print err        >> exitFailure
-      Right (ast, []) -> prettyPrint ast  >> exitSuccess
-      Right (_, errs) -> mapM_ print errs >> exitFailure
+      Left  err       -> print err                  >> exitFailure
+      Right (ast, []) -> prettyPrint ast            >> exitSuccess
+      Right (_, errs) -> mapM_ print (reverse errs) >> exitFailure
 
 showMASM :: FilePath -> IO ()
 showMASM fp = do
@@ -54,7 +54,7 @@ showMASM fp = do
     case (\(a, s) -> (a, errors s)) <$> result of
       Left  err       -> print err                     >> exitFailure
       Right (ast, []) -> TIO.putStrLn (getCode fp ast) >> exitSuccess
-      Right (_, errs) -> mapM_ print errs              >> exitFailure
+      Right (_, errs) -> mapM_ print  (reverse errs)   >> exitFailure
 
 main :: IO ()
 main = getArgs >>= chooseAction
