@@ -9,7 +9,7 @@ import Data.List (partition)
 import System.Environment (getArgs)
 import System.Exit (exitSuccess, exitFailure)
 
-import Control.Monad.State (evalStateT)
+import Control.Monad.State (runStateT, evalStateT)
 
 chooseAction :: [String] -> IO ()
 chooseAction args
@@ -39,10 +39,11 @@ showTokens fp = do
 
 showAST :: FilePath -> IO ()
 showAST fp = do
-    result <- evalStateT getSyntaxTree <$> compilerStart fp
-    case result of
-      Left err  -> print err >> exitFailure
-      Right ast -> print ast >> exitSuccess
+    result <- runStateT getSyntaxTree <$> compilerStart fp
+    case (\(a, s) -> (a, errors s)) <$> result of
+      Left  err       -> print err        >> exitFailure
+      Right (ast, []) -> prettyPrint ast  >> exitSuccess
+      Right (_, errs) -> mapM_ print errs >> exitFailure
 
 showMASM :: FilePath -> IO ()
 showMASM fp = undefined

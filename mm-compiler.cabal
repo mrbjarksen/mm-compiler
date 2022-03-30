@@ -31,5 +31,5 @@ executable mm-compiler
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:      base ^>=4.15.1.0, mtl, text, array, containers
+    build-depends:      base ^>=4.15.1.0, mtl, text, array, containers, parsec
     build-tool-depends: alex:alex, happy:happy

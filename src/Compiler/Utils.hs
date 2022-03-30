@@ -6,6 +6,8 @@ import Data.Word (Word8)
 
 import Control.Monad.State (StateT, get, gets, put)
 
+import Text.Parsec
+
 import qualified Data.Map as M
 import Data.Maybe (listToMaybe, mapMaybe)
 import Data.List (intersperse)
@@ -70,18 +72,16 @@ toLexeme EOF           = "<EOF>"
 
 ---- Elements of AST returned by parser ----
 
-newtype Program = Program [Stmt] deriving Show
+newtype Program = Program [Stmt]
 
-data Body = Body [Stmt] Int deriving Show
+data Body = Body [Stmt] Int
 
 data Stmt = FunDecl (Maybe Pos) Int Int Body
           | VarDecl [VarDecl]
           | Expr    Expr
-          deriving Show
 
 data VarDecl = VarDeclOnly
              | VarDeclAndInit Expr
-             deriving Show
 
 data Expr = CallFun  Name    [Expr]
           | CallCls  Expr    [Expr]
@@ -96,13 +96,73 @@ data Expr = CallFun  Name    [Expr]
           | And      Expr    Expr
           | Not      Expr
           | Go       Int     Body
-          deriving Show
 
-data IfCase     = If     Expr Body deriving Show
+data IfCase     = If     Expr Body
 type ElseIfCase = IfCase
 data ElseCase   = Else   Body
                 | NoElse
-                deriving Show
+
+prettyPrint :: Program -> IO ()
+prettyPrint ast = do
+    case runParser prettify 0 "" $ show ast of
+      Left  _      -> print ast
+      Right pretty -> putStrLn pretty
+
+indentString :: String
+indentString = "\ESC[38;5;240m|\ESC[0m "
+
+prettify :: Parsec String Int String
+prettify = fmap (rmempty . concat) $
+    many  $  char ' ' *> newline
+         <|> char '(' *> nest 1  *> newline
+         <|> char ')' *> nest (-1) *> newline
+         <|> (try $ string "[]")
+         <|> char '[' *> pure "[ " <* nest 1
+         <|> char ',' *> nest (-1) *> newline <> pure ", " <* nest 1
+         <|> char ']' *> nest (-1) *> newline <> pure "]" <> newline
+         <|> (\x -> [x]) <$> anyChar
+    where newline = ('\n':) . concat <$> (replicate <$> getState <*> pure indentString)
+          nest n = modifyState (+n)
+          rmempty  = unlines . filter (not . rmempty') . lines
+          rmempty' s = null s || last s == last indentString
+
+instance Show Program where
+    show (Program stmts) = "Program (" ++ show stmts ++ ")"
+
+instance Show Body where
+    show (Body stmts k) = "Body (" ++ show stmts ++ ") (" ++ show k ++ ")"
+
+instance Show Stmt where
+    show (FunDecl mp m n b) = "FunDecl (" ++ show mp  ++ ") (" ++ show m ++ ") (" 
+                                          ++ show n   ++ ") (" ++ show b ++ ")"
+    show (VarDecl vds     ) = "VarDecl (" ++ show vds ++ ")"
+    show (Expr    e       ) = "Expr ("    ++ show e   ++ ")"
+
+instance Show VarDecl where
+    show VarDeclOnly        = "VarDeclOnly"
+    show (VarDeclAndInit e) = "VarDeclAndInit (" ++ show e ++ ")"
+
+instance Show Expr where
+    show (CallFun  n  es    ) = "CallFun ("  ++      n  ++ ") (" ++ show es  ++ ")"
+    show (CallCls  e  es    ) = "CallCls ("  ++ show e  ++ ") (" ++ show es  ++ ")"
+    show (Closure  nv na  b ) = "Closure ("  ++ show nv ++ ") (" ++ show na  ++ ") (" ++ show b  ++ ")"
+    show (Fetch    p        ) = "Fetch ("    ++ show p  ++ ")"
+    show (Store    p  e     ) = "Store ("    ++ show p  ++ ") (" ++ show e   ++ ")"
+    show (Literal  l        ) = "Literal ("  ++ show l  ++ ")"
+    show (Return   e        ) = "Return ("   ++ show e  ++ ")"
+    show (IfElse   i  eis e ) = "IfElse ("   ++ show i  ++ ") (" ++ show eis ++ ") (" ++ show e  ++ ")"
+    show (While    e  b     ) = "While ("    ++ show e  ++ ") (" ++ show b   ++ ")"
+    show (Or       e1 e2    ) = "Or ("       ++ show e1 ++ ") (" ++ show e2  ++ ")"
+    show (And      e1 e2    ) = "And ("      ++ show e1 ++ ") (" ++ show e2  ++ ")"
+    show (Not      e        ) = "Not ("      ++ show e  ++ ")"
+    show (Go       m  b     ) = "Go ("       ++ show m  ++ ") (" ++ show b   ++ ")"
+
+instance Show IfCase where
+    show (If e b) = "If (" ++ show e ++ ") (" ++ show b ++ ")"
+
+instance Show ElseCase where
+    show (Else b) = "Else (" ++ show b ++ ")"
+    show NoElse   = "NoElse"
 
 ---- Position in file ----
 
