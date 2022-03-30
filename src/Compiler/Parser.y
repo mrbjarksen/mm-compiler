@@ -169,7 +169,7 @@ expr :: { Expr                                                                  
     | '(' expr ')'              { $2                                                             }
     | ifcase elseifs elsecase   { IfElse $1 $2 $3                                                }
     | 'while' '(' expr ')' body { While  $3 $5                                                   }
-    | 'fun' names_body          {% getNumVars >>= \num -> return (Closure num (fst $2) (snd $2)) }
+    | 'fun' names_body          {% getNumVars >>= \num -> return (Closure (fst $2) num (snd $2)) }
 
 ifcase :: { IfCase }
     : 'if' '(' expr ')' body { If $3 $5 }

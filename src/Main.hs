@@ -1,15 +1,18 @@
 module Main where
 
-import Compiler.Lexer
+import Compiler.Lexer (getLexemes)
 import Compiler.Parser (getSyntaxTree)
+import Compiler.Code (getCode)
 import Compiler.Utils
-
-import Data.List (partition)
 
 import System.Environment (getArgs)
 import System.Exit (exitSuccess, exitFailure)
 
+import qualified Data.Text.IO as TIO
+
 import Control.Monad.State (runStateT, evalStateT)
+
+import Data.List (partition)
 
 chooseAction :: [String] -> IO ()
 chooseAction args
@@ -46,7 +49,12 @@ showAST fp = do
       Right (_, errs) -> mapM_ print errs >> exitFailure
 
 showMASM :: FilePath -> IO ()
-showMASM fp = undefined
+showMASM fp = do
+    result <- runStateT getSyntaxTree <$> compilerStart fp
+    case (\(a, s) -> (a, errors s)) <$> result of
+      Left  err       -> print err                     >> exitFailure
+      Right (ast, []) -> TIO.putStrLn (getCode fp ast) >> exitSuccess
+      Right (_, errs) -> mapM_ print errs              >> exitFailure
 
 main :: IO ()
 main = getArgs >>= chooseAction
