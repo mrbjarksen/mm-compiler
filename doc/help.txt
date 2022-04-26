@@ -1,0 +1,57 @@
+Usage:
+
+    mm-compiler {<option>|<file>} ...
+    mm-compiler run <file> ...
+
+This program provides commands to lex, parses and compiles MicroMorpho programs,
+in addition to executing them using the Morpho Virtual Machine.
+
+When invoked with the first argument `run', this program is used in run mode.
+In run mode, the Morpho Virtual Machine is levereged to execute the input files.
+Files to be executed must have the extension `.mexe'. If an argument
+does not have the extension `.mexe', it is added.
+No options are allowed (except for `-h'/`--help') in run mode.
+
+If no files are present or invalid options are detected, an error is thrown.
+Files are processed one at a time, from left to right.
+
+By convention, an argument consisting of a single hyphen (`-')
+is interpreted as an ordinary non-option argument, which specifies
+input from or output to the standard input and output streams.
+
+If not specified using the option `-o'/`--output', the default output
+files of programs are obtained by changing the extension of the
+corresponding input file to `.mexe'.
+
+Options are applied globally and their order does not matter
+(with the exception of multiple invocations of `-o'/`--output').
+
+Options:
+    -h, -?, --help              Show this help text and exit. If this option is
+                                present, all other arguments are ignored.
+    -i, --info                  Show information regarding the LALR(1) state machine
+                                this compiler uses to parse input files.
+                                This is quite a large file, so the use of a pager
+                                is recommended. If this option is present,
+                                all other arguments (except for `-h' or `--help')
+                                are ignored.
+    -s {tokens|ast|masm},       Specifies an intermediate stage of compilation
+    --show={tokens|ast|masm}    to output, instead of producing an executable file.
+                                Only one invocation of this option is allowed.
+                                Outputs to standard output by default.
+                                    tokens: Lexes input and outputs the resulting
+                                            tokens along with their positions and
+                                            matching lexemes.
+                                    ast:    Parses input and outputs the resulting
+                                            syntax tree.
+                                    masm:   Compiles input to Morpho machine code
+                                            and outputs the result.
+    -o <file>{,<file>},         Takes a comma-seperated list of file paths and
+    --output=<file>{,<file>}    configures output files accordingly. Input files
+                                and corresponding output files are paired
+                                by order of appearence. Multiple invocations of
+                                this option append to the list of output files.
+                                If the list of output files is longer than the
+                                list of input files, the trailing output files
+                                are ignored. If it is shorter, the trailing
+                                input files are given their default outputs.
