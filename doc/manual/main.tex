@@ -1,0 +1,797 @@
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[icelandic]{babel}
+\usepackage{hyperref}
+
+\usepackage{lmodern}
+\usepackage{geometry}
+
+\usepackage{booktabs}
+\usepackage{mdframed}
+\usepackage{fancyvrb}
+
+\usepackage{calc}
+\usepackage{xcolor}
+\usepackage{float}
+
+\usepackage{syntax}
+
+\newfloat{grammarfloat}{thp}{lop}
+\floatname{grammarfloat}{Mállýsing}
+
+\mdfdefinestyle{langframe}{%
+    innerleftmargin=10pt,
+    topline=false,
+    bottomline=false,
+    linewidth=2pt,
+    linecolor=gray!75,
+    backgroundcolor=gray!8
+}
+
+\mdfdefinestyle{comparisonleft}{%
+    innerleftmargin=10pt,
+    topline=false,
+    bottomline=false,
+    linewidth=2pt,
+    linecolor=gray!75,
+    backgroundcolor=gray!8
+}
+
+\setlength{\grammarparsep}{8pt}
+
+\makeatletter
+\newenvironment{bnf}[2]{%
+    \setlength{\grammarindent}{\widthof{\synt{#2}::=} + 0.85em}
+    \def\@grammarname{#1}
+    \begin{grammarfloat}[H]
+    \begin{mdframed}[style=langframe]
+    \vspace{-\grammarparsep}
+    \begin{grammar}
+}{%
+    \end{grammar}
+    \end{mdframed}
+    \vspace{-10pt}
+    \caption{\@grammarname}
+    \end{grammarfloat}
+    \setlength{\grammarindent}{2em}
+}
+\makeatother
+
+\renewcommand*{\empty}{\ensuremath{\varepsilon}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\begin{document}
+
+\shortverb{\|}
+
+\begin{titlepage}
+    \centering
+    \vspace*{4cm}
+    {\huge\scshape Handbók fyrir afbrigði af MicroMorpho}\par
+    \vspace{0.5cm}
+    {\Large Verkefni í TÖL202M Þýðendur}\par
+    {\large Snorri Agnarsson – Háskóli Íslands}\par
+    \vspace{5cm}
+    {\large Bjarki Baldursson Harksen\par}
+    \vspace{0.2cm}
+    {\large\ttfamily bbh14@hi.is}\par
+    \vfill
+    \today
+\end{titlepage}
+
+\newgeometry{top=1in,bottom=1in,left=1.2in,right=1.2in}
+
+\tableofcontents
+
+\newgeometry{margin=1.2in}
+
+\section{Inngangur}
+Þessi handbók gerir grein fyrir málfræði og merkingu
+afbrigðis af forritunarmálinu MicroMorpho, ásamt notkun
+á þýðanda þess.
+Þetta afbrigði er frábrugðið venjulegri skilgreiningu
+á MicroMorpho, en málin eru nógu lík til þess að ekki sé nauðsynlegt
+að gera greinarmun þeirra á milli. Við munum því nota MicroMorpho
+í meiningu afbrigðisins í framhaldi þessarar handbókar.
+
+MicroMorpho er gildingarmál (e.~imperative language) í anda C og ættaðra mála.
+Málfræði þess er keimlík málfræði Morpho og er MicroMorpho að miklu leyti undirmál þess.
+Þar að auki notar MicroMorpho Morpho sýndarvélina sem undirstöðu, en
+MicroMorpho þýðandinn notar hana til keyrslu Morpho vélarmáls.
+
+\section{Notkun og uppsetning}
+
+\subsection{Uppsetning}
+Ef |git| er til staðar má nota eftirfarandi skeljarskipun
+til þess að sækja MicroMorpho þýðandann |mm-compiler|.
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}
+$ git clone https://github.com/mrbjarksen/mm-compiler/
+\end{Verbatim}
+\end{mdframed}
+
+Þetta ætti að búa til möppuna |mm-compiler| með frumkóða þýðandans.
+Einnig má sækja þessa möppu beint frá slóðinni sem gefin er í skipuninni.
+
+Áður en hægt er að setja upp þýðandann þarf að hafa aðgang að Haskell þýðanda
+og smíðatólinu Cabal. Nægja ætti að setja upp GHCup
+(sjá nánar \href{https://www.haskell.org/ghcup/install/}{hér})
+Að þessu loknu þarf aðeins að keyra eftirfarandi skipun innan möppunnar:
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}
+$ cabal install
+\end{Verbatim}
+\end{mdframed}
+
+Þetta býr til keyranlega útgáfu af þýðandanum
+og setur hana í \verb|$HOME/.cabal/bin/| á UNIX vélum,
+en í \verb|%APPDATA%\cabal\bin| á Windows.
+Bæta má viðeigandi möppu við umhverfisbreytuna \verb|PATH|
+ef keyra vill þýðandann frá skipanalínu.
+
+\subsection{Notkun}
+Þýðing og keyrsla MicroMorpho forrita með þýðandanum |mm-compiler|
+krefst þess að Java sé sett upp (sjá \href{https://www.java.com/en/}{heimasíðu Java}).
+Hins vegar má nota þýðandann til lesgreiningar, þáttunar
+og þýðingar í Morpho vélarmál jafnvel þótt Java sé ekki til staðar.
+
+Til þess að sýna notkun þýðandans skulum við skrifa einfalt
+MicroMorpho forrit.
+Við byrjum á því að búa til skrána |hello.mm| eins og að neðan.
+\medskip
+
+\colorbox{gray!75}{\hspace*{9pt}|hello.mm|\hspace{9pt}}\vspace{-10pt}\par%
+\begin{mdframed}[style=langframe,topline=true]
+\begin{Verbatim}
+writeln("Hello, world!");
+\end{Verbatim}
+\end{mdframed}
+
+Nú þýðum við forritið:
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}
+$ mm-compiler hello.mm
+\end{Verbatim}
+\end{mdframed}
+
+Þetta býr til skránna |hello.mexe| í sömu möppu.
+Nú þarf aðeins að keyra forritið með eftirfarandi skipun:
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}
+$ mm-compiler run hello.mexe
+Hello, world!
+\end{Verbatim}
+\end{mdframed}
+
+Til þess að sjá fleiri leiðir sem nota má þýðandann
+ætti að lesa hjálpartexta forritsins.
+Hann má sjá með stikanum |--help|.
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}
+$ mm-compiler --help
+\end{Verbatim}
+\end{mdframed}
+
+\section{Málfræði}
+\subsection{Lykilorð og sértákn}\label{keywords}
+Eftirfarandi orð eru lykilorð í MicroMorpho:
+
+\begin{center}
+    |else|,
+    |elsif|,
+    |false|,
+    |fun|,
+    |go|,
+    |if|,
+    |null|,
+    |return|,
+    |true|,
+    |var|,
+    |while|
+\end{center}
+
+Þessi orð er því ekki hægt að nota sem nöfn fyrir föll eða breytur.
+
+Auk þessara lykilorða hafa eftirfarandi tákn sérstaka merkingu:
+
+\begin{center}
+    |(|,
+    |)|,
+    |{|,
+    |}|,
+    |[|,
+    |]|,
+    |,|,
+    |;|,
+    |=|
+\end{center}
+
+Þessi sértákn verka jafnframt sem afmarkarar á milli annarra frumeininga málsins.
+Sama á við um hvers kyns hvíttákn (e.~whitespace).
+
+\subsection{Athugasemdir}
+Í MicroMorpho eru tvær gerðir athugasemda, annars vegar línuathugasemdir og hins vegar bálkathugasemdir.
+Texti innan í athugasemd er hunsaður.
+
+Línuathugasemd byrjar með |;;;| og nær að enda línunnar.
+Bálkathugasemd byrjar með |{;;;| og endar með |;;;}|.
+Bálkathugasemd má vera innan í annarri bálkathugasemd, þ.e.a.s.~ef
+bálkathugasemd hefst innan í annarri bálkathugasemd, þá þarf að loka þeirri innri
+áður en lokað er þeirri ytri.
+Sérhverri bálkathugasemd sem ólokið er við skráarlok er lokað sjálfkrafa.
+
+\subsection{Forrit og setningar}\label{program}
+MicroMorpho forrit er listi af setningum sem afmarkaðar eru með einni eða fleiri semikommum.
+Ekki er nauðsynlegt að ljúka síðustu setningu forrits með semikommu, en það er leyfilegt.
+
+\begin{bnf}{Forrit}{program}
+    <program> ::= <stmts>
+
+    <stmts> ::= <stmt> ";" <scs> <stmts>
+           \alt <stmt> <scs>
+
+    <stmt> ::= <fundecl>
+          \alt <vardecl>
+          \alt <expr>
+
+    <scs> ::= ";" <scs>
+         \alt \empty
+\end{bnf}
+
+Setningar forrits skiptast í skilgreiningar falla, skilgreiningar breyta og segðir.
+Eftirfarandi eru mállýsingar hverra þessara setninga.
+
+Skilgreining falla og aðgerða nota sama rithátt;
+á þeim er enginn formlegur greinarmunur.
+Þessi ritháttur er auðkenndur með lykilorðinu |fun|.
+
+\begin{bnf}{Fallsskilgreining}{names1}
+    <fundecl> ::= "fun" <name> "(" <names> ")" <body>
+             \alt "fun" <opname> "(" <names> ")" <body>
+
+    <names> ::= <names1>
+           \alt \empty
+
+    <names1> ::= <name> "," <names1>
+            \alt <name>
+
+    <body> ::= "{" <stmts> "}"
+\end{bnf}
+
+Breytuskilgreiningar nota lykilorðið |var|.
+Skilgreina má margar breytur í einni breytuskilgreiningu.
+Auk þess má velja að frumstilla breytu um leið og hún er skilgreind.
+
+\begin{bnf}{Breytuskilgreining}{declorinit}
+    <vardecl> ::= "var" <vardecls>
+
+    <vardecls> ::= <declorinit> "," <vardecls>
+              \alt <declorinit>
+
+    <declorinit> ::= <name>
+                \alt <name> "=" <expr>
+\end{bnf}
+
+Stór hluti MicroMorpho heyrir undir segðir.
+Nánari útskýringu á hinum ýmsu segðum málsins má
+finna í~\ref{exprs}.
+
+\begin{bnf}{Segðir}{exprs1}
+    <expr> ::= "return" <expr>
+          \alt <name> "=" <expr>
+          \alt "go" <body>
+          \alt <expr> <opname> <expr>
+          \alt <opname> <expr>
+          \alt <name>
+          \alt <expr> "(" <exprs> ")"
+          \alt <literal>
+          \alt "[" <exprs> "]"
+          \alt "(" <expr> ")"
+          \alt "if" "(" <expr> ")" <body> <elsifs> <else>
+          \alt "while" "(" <expr> ")" <body>
+          \alt "fun" "(" <names> ")" <body>
+
+    <exprs> ::= <exprs1>
+           \alt \empty
+
+    <exprs1> ::= <expr> "," <exprs1>
+            \alt <expr>
+
+    <elsifs> ::= "elsif" "(" <expr> ")" <body> <elsifs>
+            \alt \empty
+
+    <else> ::= "else" <body>
+          \alt \empty
+\end{bnf}
+
+\subsection{Breytunöfn}
+Nöfn á breytum (og föllum) mega innihalda
+há- eða lágstafi úr enska stafrófinu,
+tölustafi og undirstrik.
+Nöfn mega hins vegar ekki hafa tölustaf sem fyrsta staf.
+
+\begin{bnf}{Breytunöfn}{ascii-alpha}
+    <name> ::= <name-first> <name-rest>
+
+    <name-first> ::= <ascii-alpha>
+                \alt "_"
+
+    <name-rest> ::= <ascii-alpha>
+               \alt <digit>
+               \alt "_"
+
+    <ascii-alpha> ::= "a" | "b" | "c" | "d" | "e" | "f" | "g"
+                          | "h" | "i" | "j" | "k" | "l" | "m" 
+                 \alt "n" | "o" | "p" | "q" | "r" | "s" | "t"
+                          | "u" | "v" | "w" | "x" | "y" | "z" 
+                 \alt "A" | "B" | "C" | "D" | "E" | "F" | "G"
+                          | "H" | "I" | "J" | "K" | "L" | "M"
+                 \alt "N" | "O" | "P" | "Q" | "R" | "S" | "T"
+                          | "U" | "V" | "W" | "X" | "Y" | "Z" 
+\end{bnf}
+
+Nöfn einundar- og tvíundaraðgerða uppfylla mállýsinguna hér að neðan.
+
+\begin{bnf}{Aðgerðanöfn}{opname}
+    <opname> ::= <opelem> <opname>
+            \alt <opelem>
+
+    <opelem> ::= "*" | "/" | "\%" | "+" | "-" | "<" | ">" | "!" | "=" | "&" | "|" | ":" | "?" | "~" | "^" 
+\end{bnf}
+
+\subsection{Lesfastar}
+Lesfastar í MicroMorpho eru af sex gerðum:
+heiltölufastar, fleytitölufastar, strengfastar, staffastar,
+rökfastar og tómatilvísun.
+Rökfastar skiptast í |true| og |false|.
+Tómatilvísun er táknuð með |null|.
+
+Samofin mállýsing allra lesfasta er eftirfarandi.
+
+\begin{bnf}{Lesfastar}{literal}
+    <literal> ::= <int>
+             \alt <float>
+             \alt <string>
+             \alt <char>
+             \alt "true"
+             \alt "false"
+             \alt "null"
+\end{bnf}
+
+Mállýsingar fyrir sértæka lesfasta má nú sjá að neðan.
+
+Heiltölufasti er einfaldlega runa af tölustöfum,
+sem hugsanlega hefur formerki fremst.
+
+\begin{bnf}{Heiltölufastar}{minus}
+    <int> ::= <sign> <digits>
+
+    <sign> ::= "+"
+          \alt "-"
+          \alt \empty
+
+    <digits> ::= <digit> <digits>
+            \alt <digit>
+
+    <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+\end{bnf}
+
+Fleytitölufasti hefur runu af tölustöfum
+með punkt í miðjunni, þannig að a.m.k.~einn tölustafur komi fyrir
+hvoru megin við hann.
+Auk þess er hugsanlega formerki fremst í fastanum.
+Því næst fylgir valkvæður veldisvísir.
+Þessi veldisvísir byrjar annaðhvort á |e| eða á |E|
+og þeim staf fylgir runa af tölustöfum, hugsanlega með
+formerki fyrir framan.
+
+\begin{bnf}{Fleytitölufastar}{exponent}
+    <float> ::= <sign> <digits> "." <digits> <exponent>
+
+    <exponent> ::= "e" <sign> <digits>
+              \alt "E" <sign> <digits>
+              \alt \empty
+
+\end{bnf}
+
+Strengfasti er runa af leyfilegum stöfum, afmörkuðum með tvöföldum gæsalöppum hvoru megin.
+Leyfilegir stafir í streng eru allir stafir sem kóðun skráarinnar styður, að fráteknum
+tvöföldum gæsalöppum (|"|) og bakstriki (|\|). Til þess að tilgreina þá stafi í streng þarf að
+hafa bakstrik fyrir framan þá.
+Aðrar lausnarunur sem nota bakstriksstafinn til að tilgreina ákveðin tákn
+má sjá í mállýsingunni að neðan.
+
+\begin{bnf}{Strengfastar}{strelems}
+    <string> ::= "\"" <strelems> "\""
+
+    <strelems> ::= <strelem> <strelems>
+              \alt \empty
+
+    <strelem> ::= <any-but-double-quote-and-backslash>
+             \alt <escaped>
+
+    <escaped> ::= "\\" "\\"
+             \alt "\\" "\""
+             \alt "\\" "\'"
+             \alt "\\" "n"
+             \alt "\\" "r"
+             \alt "\\" "t"
+             \alt "\\" "b"
+             \alt "\\" "f"
+             \alt "\\" <octal>
+             \alt "\\" <octal> <octal>
+             \alt "\\" <quat> <octal> <octal>
+
+    <octal> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7"
+
+    <quat> ::= "0" | "1" | "2" | "3"
+\end{bnf}
+
+Staffastar eru svipaðir og strengfastar, nema þeir innihalda aðeins einn staf
+og eru afmarkaðir með einföldum gæsalöppum fremur en tvöföldum.
+Leyfilegir stafir í staf\-fasta innihalda tvöfaldar gæsalappir, ólíkt strengfasta,
+en einfaldar gæsalappir eru ekki leyfilegar.
+Nota má bakstrik til þess að sneiða hjá þessu.
+
+\begin{bnf}{Staffastar}{charelem}
+    <char> ::= "\'" <charelem> "\'"
+
+    <charelem> ::= <any-but-single-quote-and-backslash>
+              \alt <escaped>
+\end{bnf}
+
+\section{Merkingarfræði}
+
+\subsection{Forrit og stofnar}
+Eins og nefnt var í~\ref{program} er MicroMorpho forrit listi af setningum.
+Keyrsla MicroMorpho forrits felst í því að reikna úr setningum þess.
+Setningarnar eru reiknaðar í sömu röð og þær koma fyrir í forritstextanum.
+
+Sumar setningar og segðir innihalda stofn. Stofn er einnig listi setninga
+og er útreiknun þeirra í samræmi við útreiknun setninga í forriti.
+
+\subsection{Gildi}
+Öll gildi í MicroMorpho eru tilvísanir á Java hluti.
+
+\subsection{Lesfastar}\label{literals}
+Lesfastar eru af sex gerðum: 
+heiltölufastar, fleytitölufastar, strengfastar, staffastar,
+rökfastar og tómatilvísun.
+
+\subsubsection{Heiltölufastar}
+Heiltölufastar mega innihalda eins marga tölustafi og vera skal.
+Gildi heiltölufasta er viðeigandi Java hlutur – |Integer|, |Long|
+eða |BigInteger| – með tilsvarandi gildi.
+Valið á klasanum fer eftir stærð fastans.
+
+\subsubsection{Fleytitölufastar}
+Fleytitölufastar eru ávallt af tvöfaldri nákvæmni. Gildi þeirra er
+tilsvarandi Java |Double| hlutur. Ef fleytitölufasti er skrifaður með
+meiri nákvæmni en hluturinn getur geymt er talan námunduð.
+
+\subsubsection{Strengfastar}
+Gildi strengfasta er tilsvarandi Java |String| hlutur.
+
+\subsubsection{Staffastar}
+Gildi staffasta er tilsvarandi Java |Character| hlutur.
+
+\subsubsection{Rökfastar}
+MicroMorpho hefur tvo rökfasta: |true| og |false|.
+Gildi þeirra er tilsvarandi Java |Boolean| hlutur.
+
+\subsubsection{Tómatilvísun}
+MicroMorpho inniheldur tómatilvísun á forminu |null|.
+Þessi tómatilvísun hefur sama gildi og tómatilvísun Java.
+
+\subsection{Breytur og föll}
+Allar breytur í MicroMorpho eru staðværar og eru bundar við umdæmi sitt.
+Breytur eru aðeins sjáanlegar í þeim setningum sem koma á eftir skilgreiningu þeirra.
+
+\subsubsection{Umdæmi}
+Sérhvert MicroMorpho forrit hefur ysta umdæmi.
+Önnur umdæmi samsvara stofnum fallsskilgreininga
+eða |go|-/|if|-/|while|-/lokanasegða.
+Breytur úr ytri umdæmum eru þar sjáanlegar, en
+breytur sem eru skilgreindar innan slíks stofns falla úr umdæmi við lokun hans.
+
+\subsubsection{Breytuskilgreiningar}
+Breytuskilgreining er setning. Skilgreina má margar breytur í einni breytuskilgreiningu,
+og velja má að upphafstilla hverja þeirra með gildi segðar.
+Ef breyta er ekki upphafsstillt, þá er henni gefið gildið |null|.
+
+Ef margar breytur eru skilgreindar í einni breytuskilgreiningu,
+þá eru þær skilgreindar í sömu röð og þær koma fyrir í setningunni.
+Þannig má nota gildi breyta sem skilgreindar hafa verið fyrr í setningunni
+í upphafsstillingarsegð.
+Ekki má nota breytu í eigin upphafsstillingarsegð.
+
+Engar tvær breytur með sama umdæmi mega hafa sama nafn, en
+ef breyta er skilgreind með sama nafn og breyta í ytri umdæmi,
+þá vísar sérhver notkun breytunnar í umdæminu á innri skilgreiningu hennar.
+Þegar umdæmið lokar tekur hin gamla skilgreining við á ný.
+
+\subsubsection{Föll og lokanir}
+Sérhvert fall í MicroMorpho er lokun. Því má geyma fall
+í breytu, skila falli úr falli og nota fall sem viðfang í fall.
+Auk þess eru öll föll sem skilgreind eru í MicroMorpho forriti breytur.
+Allar reglur um breytur gilda því einnig um föll.
+
+Þegar fall er skilgreint er fyrst athugað hvort breyta með sama nafn er skilgreind
+í sama umdæmi. Ef svo er er þessari breytu gefið gildið sem tilsvarandi lokunarsegð hefur.
+Annars er breytan skilgreind og upphafsstillt með lokuninni.
+
+Eftirfarandi tveir rithættir eru þar með jafngildir:
+
+\null\hfill%
+\begin{minipage}{0.5\textwidth + 1pt}
+\begin{mdframed}[style=langframe]
+\begin{minipage}[t][24pt][t]{\textwidth}
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+fun f() { $\cdots$ };
+\end{Verbatim}
+\end{minipage}
+\end{mdframed}
+\end{minipage}%
+\hspace*{-2pt}%
+\begin{minipage}{0.5\textwidth + 1pt}
+\begin{mdframed}[style=langframe]
+\begin{minipage}[t][24pt][t]{\textwidth}
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+var f;
+f = fun () { $\cdots$ };
+\end{Verbatim}
+\end{minipage}
+\end{mdframed}
+\end{minipage}%
+\hfill\null
+\bigskip
+
+Hér er setningin |var f| aðeins til staðar ef ekki er búið
+að skilgreina |f| í sama umdæmi.
+
+Föll mega vera endurkvæm. Athuga ætti hins vegar að
+þar sem ekki má nota breytu í eigin upphafsstillingarsegð
+er ekki hægt að skilgreina endurkvæmt fall með eftirfarandi rithætti:
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+var f = fun () { $\cdots$ }
+\end{Verbatim}
+\end{mdframed}
+
+\subsubsection{Aðgerðir}
+MicroMorpho styður skilgreiningu einundar- og tvíundaraðgerða.
+Aðgerðir eru einfaldlega föll sem taka annaðhvort eitt eða tvö viðföng.
+Athuga ætti hins vegar að aðgerðanöfn og breytunöfn eru ekki víxlanleg,
+og því má ekki nota aðgerðir á sama hátt og nota má föll og breytur.
+
+Aðgerðir eru skilgreindar með sama rithætti og föll.
+Ekki má skilgreina aðgerð sem hefur annan fjölda stika en einn eða tveir.
+Aðgerð sem skilgreind er með einum stika má nota sem einundaraðgerð
+en aðgerð með tveimur stikum má nota sem tvíundaraðgerð.
+
+Rökaðgerðirnar \verb/||/, |&&| og |!| eru meðhöndlaðar á sérstakan hátt
+(sjá~\ref{opexpr} og~\ref{logicalexprs}). Það er því ekki leyfilegt að endurskilgreina þessar aðgerðir.
+
+\subsubsection{BASIS einingin}
+MicroMorpho flytur inn BASIS einingu Morpho, sem inniheldur mörg grundvallarföll og aðgerðir.
+Þessi föll má aðeins nota í beinu fallskalli eða aðgerðarbeitingu,
+en föllin eru ekki sjáanleg sem breytur innan MicroMorpho forrits.
+Þessum föllum er ekki lýst í þessari handbók.
+
+\subsection{Segðir}\label{exprs}
+Líkt og í Morpho er lögð meiri áhersla á segðir en á setningar.
+Einu merkingarlega sjálfstæðu fyrirbærin í MicroMorpho sem ekki eru segðir eru
+skilgreiningar falla og breyta.
+Þetta er ólíkt virkni margra C-ættaðra mála sem Morpho og MicroMorpho erfa frá.
+
+\subsubsection{Lesfastasegð}
+Lesfastar heyra undir segðir. Gildi lesfastasegðar er sama og gildi lesfastans (sjá~\ref{literals}).
+
+\subsubsection{Breytusegð}
+Nota má nafn á sjáanlegri breytu sem segð. Segðin hefur sama gildi og breytan.
+Breytunafn sem ekki samsvarar sjáanlegri breytu er hins vegar ekki lögleg segð.
+
+\subsubsection{Gildisveiting}
+Gefa má sjáanlegri breytu gildi sem er útkoma úr annarri segð.
+Þetta er gert með |=| tákninu.
+Ekki má gefa óskilgreindri breytu gildi á þennan hátt.
+
+Gildisveiting er segð sem hefur sama gildi og segðin sem
+er notuð til þess að gefa breytu gildi.
+Þetta má nota til þess að gefa mörgum breytum sama gildið,
+til dæmis ef |a| og |b| eru skilgreindar breytur þá
+má gefa þeim báðum gildið |2| með segðini |a = b = 2|.
+
+\subsubsection{Listasegð}
+Búa má til listasegð með því að setja núll eða fleiri
+segðir á milli hornklofa (þ.e.~táknanna |[| og |]|)
+afmarkaðar með kommum. Gildi segðarinnar er þá
+listinn sem hefur sem haus gildi fyrstu segðarinnar
+á milli hornklofanna (ef hún er til staðar).
+Tómi listinn er skrifaður |[]| og hefur sama gildi og
+tómatilvísunin |null|.
+
+Þessi ritháttur er aðeins til þæginda, enda má fá sömu virkni
+með aðgerðinni |:| úr BASIS einingunni.
+Eftirfarandi segðir eru þannig jafngildar:
+
+\null\hfill%
+\begin{minipage}{0.333\textwidth + 1pt}
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+[1,2,3]
+\end{Verbatim}
+\end{mdframed}
+\end{minipage}%
+\hspace*{-2pt}%
+\begin{minipage}{0.333\textwidth + 1pt}
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+1:2:3:[]
+\end{Verbatim}
+\end{mdframed}
+\end{minipage}%
+\hspace*{-2pt}%
+\begin{minipage}{0.333\textwidth + 1pt}
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+1:2:3:null
+\end{Verbatim}
+\end{mdframed}
+\end{minipage}%
+\hfill\null
+\bigskip
+
+\subsubsection{Kallsegð}
+Fallskall er segð sem hefur skilagildi kallsins sem gildi.
+Kallað er á fall með því að setja viðföng þess í sviga á eftir því,
+afmörkuð með kommum. Til dæmis má kalla á fall |f| sem tekur tvö viðföng
+með segðinni |f(1,2)|.
+
+Föll nota ávallt gildisviðföng.
+Fallið sem kallað er á má vera lokun sem er útkoma úr annarri segð.
+Segðin að neðan er þannig lögleg og skilar gildinu |2|
+(ef |+| hefur ekki verið endurskilgreind).
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+(fun (x) { x + 1 })(1)
+\end{Verbatim}
+\end{mdframed}
+
+Ef reynt er að kalla á fall sem ekki er sjáanleg breyta, þá er leitað
+að viðeigandi falli í BASIS einingu Morpho.
+
+\subsubsection{Aðgerðasegð}\label{opexpr}
+Beiting einundar- og tvíundaraðgerðar er segð sem hefur skilagildi aðgerðinnar sem gildi.
+Ekki má kalla á aðgerðir á sama hátt og á föll (þ.e.~með því að skeyta aftan
+við þau viðföngum innan sviga). Kall á einundaraðgerð hefur
+aðgerðarnafnið fyrir framan viðfang sitt en kall á tvíundaraðgerð hefur það á milli viðfanganna
+(með fyrra viðfangið til vinstri en það seinna til hægri).
+
+Ef margar aðgerðir eru notaðar hlið við hlið og engir svigar eru notaðir
+til að ákvarða röðun aðgerðanna (sjá~\ref{parens}), þá er beitt forgangi og tengni
+aðgerðanna til þess að ákvarða hvaða segðir eru reiknaðar fyrst.
+Einundaraðgerðir hafa hæstan forgang.
+Forgangur og tengni tvíundaraðgerða fer eftir fyrsta staf aðgerðarinnar.
+Eftirfarandi tafla sýnir forgangstölu og tengni tvíundaraðgerða eftir
+fyrsta staf aðgerðarinnar. Hærri forgangstala samsvarar hærri forgangi.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lrl}
+        \toprule
+        Fyrsti stafur          & Forgangstala & Tengni \\
+        \midrule
+        |*|, |/| eða \verb|%|  &            7 & Vinstri \\
+        |+| eða |-|            &            6 & Vinstri \\
+        |<|, |>|, |!|, eða |=| &            5 & Vinstri \\
+        |&|                    &            4 & Vinstri \\
+        \verb/|/               &            3 & Vinstri \\
+        |:|                    &            2 & Hægri   \\
+        |?|, |~| eða |^|       &            1 & Vinstri \\
+        \bottomrule
+    \end{tabular}
+    \caption{Forgangur og tengni tvíundaraðgerða}
+\end{table}
+
+Athuga ætti hins vegar að sérstök meðhöndlun er á einundaraðgerðinni |!|
+og tvíundaraðgerðunum |&&| og \verb/||/. Virkni þeirra er lýst í~\ref{logicalexprs}.
+Þessar aðgerðir hafa allar lægri forgang en aðrar aðgerðir.
+Innbyrðis forgangsröðun þeirra er slík að |!| hefur meiri forgang en |&&|
+og |&&| hefur meiri forgang en \verb/||/. Tvíundaraðgerðirnar |&&| og \verb/||/
+eru tengnar til vinstri.
+
+\subsubsection{Sannlegar segðir og röksegðir}\label{logicalexprs}
+Í MicroMorpho er sérhver segð annað hvort sögð vera sannleg eða ósannleg.
+Einu segðirnar sem eru ósannlegar eru lesfastasegðirnar |false| og |null|.
+Segðir sem nota sannleika eru skilyrtar segðir (sjá~\ref{ifexpr}),
+lykkjusegðir (sjá~\ref{whileexpr}) og röksegðir.
+
+Röksegðir eru aðgerðarsegðir sem nota aðgerðirnar |!|, |&&| eða \verb/||/.
+\begin{itemize}
+    \item Aðgerðin |!| er nefnd neitunar-aðgerðin. Kallið |!|$a$ skilar |true|
+        ef $a$ er ósannleg segð, annars skilar það |false|.
+    \item Aðgerðin |&&| er nefnd og-aðgerðin. Kallið $a$ |&&| $b$ skilar
+        gildi segðarinnar $a$ ef $a$ er ósannleg segð,
+        annars skilar það gildi segðarinnar $b$.
+        Ef $a$ er ósannleg segð er ekki reiknað úr segðinni $b$.
+    \item Aðgerðin \verb/||/ er nefnd eða-aðgerðin. Kallið $a$ \verb/||/ $b$ skilar
+        gildi segðarinnar $a$ ef $a$ er sannleg segð,
+        annars skilar það gildi segðarinnar $b$.
+        Ef $a$ er sannleg segð er ekki reiknað úr segðinni $b$.
+\end{itemize}
+
+\subsubsection{Segð í sviga}\label{parens}
+Ef segð er sett í sviga fæst ný segð sem hefur sama gildi og segðin
+innan í sviganum. Þetta er notað til þess að auka lesanleika forrits
+og til þess að breyta röð aðgerða.
+
+\subsubsection{Skilyrt segð}\label{ifexpr}
+MicroMorpho styður skilyrtar segðir með lykilorðunum |if|, |elsif| og |else|.
+Skilyrt segð samanstendur af |if|-hluta, núll eða fleiri |elsif|-hlutum
+og hugsanlegum |else|-hluta. Hver hluti hefur sinn stofn og hver hluti sem ekki er
+|else|-hluti hefur sitt skilyrði.
+
+Dæmigerð skilyrt segð er eftirfarandi.
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+if ($c_0$) { $\cdots$ }
+elsif ($c_1$) { $\cdots$ }
+elsif ($c_2$) { $\cdots$ }
+$\vdots$
+elsif ($c_n$) { $\cdots$ }
+else { $\cdots$ }
+\end{Verbatim}
+\end{mdframed}
+
+Hér er $c_0$ skilyrði |if|-hlutans og $c_1, \ldots, c_n$ skilyrði |elsif|-hlutanna.
+Þegar reiknað er úr þessari segð er reiknað úr segðunum $c_0, \ldots c_n$, koll af kolli,
+þangað til fundin er sannleg segð. Tilsvarandi stofn er þá keyrður og hætt er að reikna
+skilyrðin. Ef ekkert þessara skilyrða er sannlegt þá er stofn |else|-hlutans keyrður.
+
+\subsubsection{Lykkjusegð}\label{whileexpr}
+Lykkjusegðir í MicroMorpho einkennast af lykilorðinu |while|.
+Lykkjan hefur tilsvarandi skilyrði og stofn.
+
+Dæmigerð lykkjusegð er eftirfarandi.
+
+\begin{mdframed}[style=langframe]
+\begin{Verbatim}[commandchars=\\?!,codes={\catcode`$=3\catcode`^=7}]
+while ($c$) { $\cdots$ }
+\end{Verbatim}
+\end{mdframed}
+
+Hér er $c$ skilyrði lykkjusegðarinnar. Þegar reiknað er úr þessari segð
+er fyrst reiknað úr segðinni $c$. Ef hún er sannleg þá er stofn segðarinnar keyrður.
+Þetta er síðan endurtekið þangað til $c$ er ekki sannleg segð.
+
+\subsubsection{Lokanir}
+Skilgreining lokunar er segð, þótt skilgreining falls sé það ekki.
+Gildi lokunarsegðar er lokunin sjálf.
+Rithættur lokunarsegðar og fallsskilgreiningar eru eins að því fráteknu
+að lokunarsegð hefur ekki breytunafn á eftir |fun| lykilorðinu.
+
+\subsubsection{Skilsegð}
+Sú aðgerð að skila gildi úr fallskalli er segð. Segðin notar |return| lykilorðið
+til þess að merkja gildið sem skila ætti. Forðast ætti að nota
+skilsegð þar sem útkoma segðarinnar skiptir máli, enda er þá hætt keyrslu
+fallsstofnsins.
+
+\subsubsection{Samskeið segð}
+MicroMorpho styður samskeiða forritun með notkun |go| lykilorðsins.
+Þegar |go| er sett fyrir framan stofn, þá er búinn til þráður í nýrri verkeiningu
+á vélinni og stofninn keyrður á þessum þræði.
+
+\end{document}

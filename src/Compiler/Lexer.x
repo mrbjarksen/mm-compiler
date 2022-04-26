@@ -15,18 +15,17 @@ import Data.Bits (shiftR, (.&.))
 
 }
 
---%wrapper "monad"
-
 $digit   = [0-9]
-$delim   = [\(\)\{\}\,\;\=]
+$delim   = [\(\)\{\}\[\]\,\;\=]
 $opelem  = [\*\/\%\+\-\<\>\!\=\&\|\:\?\~\^]
 
 @int     = $digit+
-@float   = [\+\-]?$digit+\.$digit+([eE][\+\-]?$digit+)?
-@strelem = [^\"\\] | \\[btnfr\"\'\\] | (\\[0-3][0-7][0-7]) | \\[0-7][0-7] | \\[0-7]
+@float   = $digit+\.$digit+([eE][\+\-]?$digit+)?
+@strelem = \\[btnfr\"\'\\] | (\\[0-3][0-7][0-7]) | \\[0-7][0-7] | \\[0-7]
 @string  = \"([^\"\\] | @strelem)*\"
 @char    = \'([^\'\\] | @strelem)\'
-@literal = @string | @char | @float | @int | null | true | false
+@literal = @string | @char | true | false | null
+@number  = @float | @int
 @op1     = [\?\~\^]$opelem*
 @op2     = \:$opelem*
 @op3     = \|$opelem*
@@ -34,7 +33,7 @@ $opelem  = [\*\/\%\+\-\<\>\!\=\&\|\:\?\~\^]
 @op5     = [\<\>\!\=]$opelem*
 @op6     = [\+\-]$opelem*
 @op7     = [\*\/\%]$opelem*
-@name    = [_a-zA-Z][_a-zA-Z0-9]*
+@name    = [a-zA-Z_][a-zA-Z0-9_]*
 
 tokens :-
 
@@ -57,6 +56,7 @@ tokens :-
     <0>     "!"      { mkTok  NOT     }
     <0>     $delim   { mkTokC DELIM   }
     <0>     @literal { mkTokS LITERAL }
+    <0>     @number  { mkTokS NUMBER  }
     <0>     @op1     { mkTokS OP1     }
     <0>     @op2     { mkTokS OP2     }
     <0>     @op3     { mkTokS OP3     }
@@ -102,7 +102,7 @@ utf8Encode' c = case go (ord c) of (x, xs) -> (fromIntegral x, map fromIntegral 
             | oc <= 0x7ff  = (0xc0 + (oc `shiftR` 6), [0x80 + oc .&. 0x3f])
             | oc <= 0xffff = (0xe0 + (oc `shiftR` 12), [0x80 + ((oc `shiftR` 6) .&. 0x3f), 0x80 + oc .&. 0x3f])
             | otherwise    = ( 0xf0 + (oc `shiftR` 18)
-                             , [0x80 + ((oc `shiftR` 12) .&. 0x3f)
+                             , [ 0x80 + ((oc `shiftR` 12) .&. 0x3f)
                                , 0x80 + ((oc `shiftR` 6) .&. 0x3f)
                                , 0x80 + oc .&. 0x3f
                                ]
@@ -164,6 +164,7 @@ instance Show Token where
     show (OP7 _)     = "OP7"
     show (NAME _)    = "NAME"
     show (LITERAL _) = "LITERAL"
+    show (NUMBER _)  = "NUMBER"
     show (DELIM d)   = [d]
     show EOF         = "<EOF>"
 

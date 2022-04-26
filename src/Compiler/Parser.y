@@ -1,6 +1,4 @@
 {
-{-# LANGUAGE TupleSections #-}
-
 module Compiler.Parser (getSyntaxTree) where
 
 import Compiler.Lexer (getToken)
@@ -46,10 +44,13 @@ import Control.Monad.Except (throwError)
     OP7      { OP7     $$ }
     NAME     { NAME    $$ }
     LITERAL  { LITERAL $$ }
+    NUMBER   { NUMBER  $$ }
     '('      { DELIM '('  }
     ')'      { DELIM ')'  }
     '{'      { DELIM '{'  }
     '}'      { DELIM '}'  }
+    '['      { DELIM '['  }
+    ']'      { DELIM ']'  }
     ','      { DELIM ','  }
     ';'      { DELIM ';'  }
     '='      { DELIM '='  }
@@ -77,12 +78,13 @@ program :: { Program }
     : stmts { Program $1 }
 
 stmts :: { [Stmt] }
-    : fundecl scs stmts     {      $1 : $3 }
-    | vardecl scs ';' stmts {      $1 : $4 }
-    | expr scs ';' stmts    { Expr $1 : $4 }
-    | fundecl scs           {      [$1 ]    }
-    | vardecl scs           {      [$1]    }
-    | expr scs              { [Expr $1]    }
+    : stmt scs ';' stmts { $1 : $4 }
+    | stmt scs           { [$1]    }
+
+stmt :: { Stmt }
+    : fundecl {      $1 }
+    | vardecl {      $1 }
+    | expr    { Expr $1 }
 
 scs :: { () }
     : scs ';'     { () }
@@ -116,17 +118,18 @@ close :: { Int }
 ---- Declerations ----
 
 fundecl :: { Stmt }
-    : fun_NAME names_body   {% getNumVars >>= \num -> return (FunDecl (fst $1) (fst $2) num (snd $2)) }
+    : fun_NAME names_body   {% getNumVars >>= \num -> return (FunDecl (fst $1) (snd $1) (fst $2) num (snd $2)) }
     | fun_OPNAME names_body {% reportErrorIf (fst $2 `notElem` [1, 2]) (OpDefBadNumParams (snd $1) (fst $2)) 
-                               >> getNumVars >>= \num -> return (FunDecl (fst $1) (fst $2) num (snd $2))
+                               >> getNumVars >>= \num -> 
+                               return (FunDecl (fst (fst $1)) (snd (fst $1)) (fst $2) num (snd $2))
                             }
 
-fun_NAME :: { (Maybe Pos, Name) }
-    : 'fun' NAME {% (,$2) `fmap` addFunC $2 }
+fun_NAME :: { (Bool, Pos) }
+    : 'fun' NAME {% addFunC $2 }
 
-fun_OPNAME :: { (Maybe Pos, Name) }
+fun_OPNAME :: { ((Bool, Pos), Name) }
     : 'fun' OPNAME {% reportErrorIf ($2 `elem` ["||", "&&", "!"]) (CannotOverloadOp $2)
-                      >> (,$2) `fmap` addFunC $2
+                      >> fmap (\x -> (x, $2)) (addFunC $2)
                    }
 
 vardecl :: { Stmt }
@@ -151,7 +154,7 @@ OPNAME :: { String }
     | OP6 { $1 }
     | OP7 { $1 }
 
-expr :: { Expr                                                                                   }
+expr :: { Expr }
     : 'return' expr             { Return $2                                                      }
     | NAME '=' expr             {% findVarC $1 >>= \pos -> return (Store pos $3)                 }
     | 'go' body                 {% getNumVars  >>= \num -> return (Go num $2)                    }
@@ -165,11 +168,13 @@ expr :: { Expr                                                                  
     | expr OP5 expr             {% mkCall $2 [$1, $3]                                            }
     | expr OP6 expr             {% mkCall $2 [$1, $3]                                            }
     | expr OP7 expr             {% mkCall $2 [$1, $3]                                            }
-    | OPNAME expr %prec UNOP    {% mkCall $1 [$2]                                                }
+    | OPNAME expr %prec UNOP    {% mkNumOrCall $1 $2                                             }
     | NAME                      {% findVarC $1 >>= \pos -> return (Fetch pos)                    }
     | NAME '(' exprs ')'        {% mkCall $1 $3                                                  }
     | expr '(' exprs ')'        { CallCls $1 $3                                                  }
     | LITERAL                   { Literal $1                                                     }
+    | '[' exprs ']'             { List $2                                                        }
+    | NUMBER                    { Number  $1                                                     }
     | '(' expr ')'              { $2                                                             }
     | ifcase elseifs elsecase   { IfElse $1 $2 $3                                                }
     | 'while' '(' expr ')' body { While  $3 $5                                                   }
@@ -213,14 +218,16 @@ addVarC name = do
       Left  _   -> reportError $ VarDefinedInScope name
       Right new -> put $ state { scopeStack = new }
 
-addFunC :: Name -> Compiler (Maybe Int)
+addFunC :: Name -> Compiler (Bool, Pos)
 addFunC name = do
     state <- get
     case addVar name $ scopeStack state of 
-      Left  pos -> return $ Just pos
-      Right new -> put (state { scopeStack = new }) >> return Nothing
+      Left  pos -> return (False, pos)
+      Right new -> getNumVars >>= \pos ->
+                   put (state { scopeStack = new })
+                   >> return (True, pos)
 
-findVarC :: Name -> Compiler Int
+findVarC :: Name -> Compiler Pos
 findVarC name = do
     mpos <- gets $ findVar name . scopeStack 
     case mpos of
@@ -233,6 +240,12 @@ mkCall name es = do
     return $ case mpos of
       Nothing  -> CallFun name         es
       Just pos -> CallCls (Fetch pos)  es
+
+mkNumOrCall :: Name -> Expr -> Compiler Expr
+mkNumOrCall op num@(Number ('-':_)) = mkCall op [num]
+mkNumOrCall "+" num@(Number _) = return num
+mkNumOrCall "-" (Number num) = return . Number $ '-':num
+mkNumOrCall op expr = mkCall op [expr]
 
 ---- Parse error handling ----
 

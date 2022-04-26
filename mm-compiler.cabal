@@ -19,7 +19,11 @@ maintainer:         bjarki31@gmail.com
 -- A copyright notice.
 -- copyright:
 -- category:
-extra-source-files: CHANGELOG.md
+--extra-source-files:
+
+data-files: src/morpho.jar
+            doc/Parser.info
+            doc/help.txt
 
 executable mm-compiler
     main-is:            Main.hs
@@ -27,9 +31,21 @@ executable mm-compiler
     default-language:   Haskell2010
 
     -- Modules included in this executable, other than Main.
-    other-modules:     Compiler.Lexer, Compiler.Parser, Compiler.Code, Compiler.Utils
+    other-modules:     Compiler.Lexer,
+                       Compiler.Parser,
+                       Compiler.Masm,
+                       Compiler.Utils,
+                       Paths_mm_compiler
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:      base ^>=4.15.1.0, mtl, text, array, containers, parsec, filepath
+    build-depends:      base ^>=4.15.1.0,
+                        mtl,
+                        text,
+                        array,
+                        containers,
+                        parsec,
+                        filepath,
+                        process,
+                        directory
     build-tool-depends: alex:alex, happy:happy

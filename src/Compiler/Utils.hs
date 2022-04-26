@@ -1,8 +1,9 @@
 module Compiler.Utils where
 
 import Data.Text (Text)
-import qualified Data.Text.IO as TIO
 import Data.Word (Word8)
+import Data.Text.IO (hGetContents)
+import System.IO (Handle)
 
 import Control.Monad.State (StateT, get, gets, put)
 
@@ -43,6 +44,7 @@ data Token = IF
            | OP7     OpName
            | NAME    Name
            | LITERAL String
+           | NUMBER  String
            | DELIM   Char
            | EOF
 
@@ -67,6 +69,7 @@ toLexeme (OP6 op)      = op
 toLexeme (OP7 op)      = op
 toLexeme (NAME name)   = name
 toLexeme (LITERAL lit) = lit
+toLexeme (NUMBER num)  = num
 toLexeme (DELIM d)     = [d]
 toLexeme EOF           = "<EOF>"
 
@@ -76,7 +79,7 @@ newtype Program = Program [Stmt]
 
 data Body = Body [Stmt] Int
 
-data Stmt = FunDecl (Maybe Pos) Int Int Body
+data Stmt = FunDecl Bool Pos Int Int Body
           | VarDecl [VarDecl]
           | Expr    Expr
 
@@ -89,6 +92,8 @@ data Expr = CallFun  Name    [Expr]
           | Fetch    Pos
           | Store    Pos     Expr
           | Literal  String
+          | Number   String
+          | List     [Expr]
           | Return   Expr
           | IfElse   IfCase  [ElseIfCase] ElseCase
           | While    Expr    Body
@@ -102,17 +107,14 @@ type ElseIfCase = IfCase
 data ElseCase   = Else   Body
                 | NoElse
 
-prettyPrint :: Program -> IO ()
-prettyPrint ast = do
-    case runParser prettify 0 "" $ show ast of
-      Left  _      -> print ast
-      Right pretty -> putStrLn pretty
+programToString :: Program -> String -> String
+programToString ast indent = do
+    case runParser (prettify indent) 0 "" $ show ast of
+      Left  _      -> show ast
+      Right pretty -> pretty
 
-indentString :: String
-indentString = "\ESC[38;5;240m|\ESC[0m "
-
-prettify :: Parsec String Int String
-prettify = fmap (rmempty . concat) $
+prettify :: String -> Parsec String Int String
+prettify indent = fmap (rmempty . concat) $
     many  $  char ' ' *> newline
          <|> char '(' *> nest 1  *> newline
          <|> char ')' *> nest (-1) *> newline
@@ -121,10 +123,10 @@ prettify = fmap (rmempty . concat) $
          <|> char ',' *> nest (-1) *> newline <> pure ", " <* nest 1
          <|> char ']' *> nest (-1) *> newline <> pure "]" <> newline
          <|> (\x -> [x]) <$> anyChar
-    where newline = ('\n':) . concat <$> (replicate <$> getState <*> pure indentString)
+    where newline = ('\n':) . concat <$> (replicate <$> getState <*> pure indent)
           nest n = modifyState (+n)
           rmempty  = unlines . filter (not . rmempty') . lines
-          rmempty' s = null s || last s == last indentString
+          rmempty' s = null s || last s == last indent
 
 instance Show Program where
     show (Program stmts) = "Program (" ++ show stmts ++ ")"
@@ -133,10 +135,10 @@ instance Show Body where
     show (Body stmts k) = "Body (" ++ show stmts ++ ") (" ++ show k ++ ")"
 
 instance Show Stmt where
-    show (FunDecl mp m n b) = "FunDecl (" ++ show mp  ++ ") (" ++ show m ++ ") (" 
-                                          ++ show n   ++ ") (" ++ show b ++ ")"
-    show (VarDecl vds     ) = "VarDecl (" ++ show vds ++ ")"
-    show (Expr    e       ) = "Expr ("    ++ show e   ++ ")"
+    show (FunDecl new p m n b) = "FunDecl (" ++ show new ++ ") (" ++ show p ++ ") (" ++ show m ++ ") (" 
+                                             ++ show n   ++ ") (" ++ show b ++ ")"
+    show (VarDecl vds        ) = "VarDecl (" ++ show vds ++ ")"
+    show (Expr    e          ) = "Expr ("    ++ show e   ++ ")"
 
 instance Show VarDecl where
     show VarDeclOnly        = "VarDeclOnly"
@@ -149,6 +151,8 @@ instance Show Expr where
     show (Fetch    p        ) = "Fetch ("    ++ show p  ++ ")"
     show (Store    p  e     ) = "Store ("    ++ show p  ++ ") (" ++ show e   ++ ")"
     show (Literal  l        ) = "Literal ("  ++ show l  ++ ")"
+    show (Number   n        ) = "Number ("   ++ show n  ++ ")"
+    show (List     es       ) = "List ("     ++ show es ++ ")"
     show (Return   e        ) = "Return ("   ++ show e  ++ ")"
     show (IfElse   i  eis e ) = "IfElse ("   ++ show i  ++ ") (" ++ show eis ++ ") (" ++ show e  ++ ")"
     show (While    e  b     ) = "While ("    ++ show e  ++ ") (" ++ show b   ++ ")"
@@ -214,9 +218,9 @@ data CState = CState { filePos      :: FilePos         -- Position in file
                      , errors       :: [SemanticError] -- Semantic errors encountered
                      }
 
-compilerStart :: FilePath -> IO CState
-compilerStart fp = do
-    txt <- TIO.readFile fp
+compilerStart :: FilePath -> Handle -> IO CState
+compilerStart fp input = do
+    txt <- hGetContents input
     return $ CState { filePos      = FilePos fp 1 1
                     , curBytes     = []
                     , inputText    = txt
@@ -236,7 +240,7 @@ startComment = get >>= \state ->
 
 endComment :: Compiler ()
 endComment = get >>= \state ->
-             put $ state { commentDepth = min 0 (commentDepth state - 1) }
+             put $ state { commentDepth = max 0 (commentDepth state - 1) }
 
 setSymPos :: FilePos -> Compiler ()
 setSymPos pos = get >>= \state ->
