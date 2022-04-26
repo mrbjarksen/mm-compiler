@@ -1,50 +1,38 @@
 cabal-version:      2.4
 name:               mm-compiler
 version:            0.1.0.0
-
--- A short (one-line) description of the package.
--- synopsis:
-
--- A longer description of the package.
--- description:
-
--- A URL where users can report bugs.
--- bug-reports:
-
--- The license under which the package is released.
--- license:
+synopsis:           A MicroMorpho compiler
+description:        This is a bottom-up compiler for the programming language MicroMorpho
+                    written in Haskell. It was produced during the course TÖL202M Þýðendur
+                    in the University of Iceland on compiler design, taught by Snorri
+                    Agnarsson in 2022.
+bug-reports:        https://github.com/mrbjarksen/mm-compiler/issues
 author:             Bjarki Baldursson Harksen
 maintainer:         bjarki31@gmail.com
 
--- A copyright notice.
--- copyright:
--- category:
---extra-source-files:
-
-data-dir:   data
-data-files: help.txt, Parser.info, morpho.jar
+extra-source-files: README.md
+data-dir:           data
+data-files:         help.txt
+                    Parser.info
+                    morpho.jar
 
 executable mm-compiler
     main-is:            Main.hs
     hs-source-dirs:     src
     default-language:   Haskell2010
-
-    -- Modules included in this executable, other than Main.
-    other-modules:     Compiler.Lexer,
-                       Compiler.Parser,
-                       Compiler.Masm,
-                       Compiler.Utils,
-                       Paths_mm_compiler
-
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
-    build-depends:      base ^>=4.15.1.0,
-                        mtl,
-                        text,
-                        array,
-                        containers,
-                        parsec,
-                        filepath,
-                        process,
-                        directory
-    build-tool-depends: alex:alex, happy:happy
+    other-modules:      Compiler.Lexer
+                        Compiler.Parser
+                        Compiler.Masm
+                        Compiler.Utils
+                        Paths_mm_compiler
+    build-depends:      base ^>=4.15.1.0
+                      , mtl
+                      , text
+                      , array
+                      , containers
+                      , parsec
+                      , filepath
+                      , process
+                      , directory
+    build-tool-depends: alex:alex
+                      , happy:happy
