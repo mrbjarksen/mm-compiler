@@ -134,10 +134,10 @@ failure msg = mapM_ putStrLn
     ] >> exitFailure
 
 showHelp :: IO ()
-showHelp = getDataFileName "doc/help.txt" >>= TIO.readFile >>= TIO.putStrLn >> exitSuccess
+showHelp = getDataFileName "help.txt" >>= TIO.readFile >>= TIO.putStrLn >> exitSuccess
 
 showInfo :: IO ()
-showInfo = getDataFileName "doc/Parser.info" >>= TIO.readFile >>= TIO.putStrLn >> exitSuccess
+showInfo = getDataFileName "Parser.info" >>= TIO.readFile >>= TIO.putStrLn >> exitSuccess
 
 outputTokens :: (FilePath, FilePath) -> IO ()
 outputTokens (input, output) = do
@@ -185,7 +185,7 @@ outputExecutable a@(input, output) = do
               oh <- outputHandle output
               TIO.hPutStrLn oh txt
               hClose oh
-              morpho <- getDataFileName "src/morpho.jar"
+              morpho <- getDataFileName "morpho.jar"
               callCommand $ "java -jar " ++ morpho ++ " -c \"" ++ output ++ "\""
 
 ifExists :: FilePath -> IO a -> IO a
@@ -220,7 +220,7 @@ runPrograms args
 run :: FilePath -> IO ()
 run "-" = failure $ "cannot run executable from standard input"
 run fp  = let file = if "mexe" `isExtensionOf` fp then fp else fp <.> "mexe" in do
-    morpho <- getDataFileName "src/morpho.jar"
+    morpho <- getDataFileName "morpho.jar"
     ifExists file $ callCommand $ "java -jar " ++ morpho ++ " \"" ++ dropExtension file ++ "\""
 
 ---- main ----

@@ -21,9 +21,7 @@ maintainer:         bjarki31@gmail.com
 -- category:
 --extra-source-files:
 
-data-files: src/morpho.jar
-            doc/Parser.info
-            doc/help.txt
+data-dir: data
 
 executable mm-compiler
     main-is:            Main.hs
