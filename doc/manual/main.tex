@@ -135,6 +135,11 @@ en í \verb|%APPDATA%\cabal\bin| á Windows.
 Bæta má viðeigandi möppu við umhverfisbreytuna \verb|PATH|
 ef keyra vill þýðandann frá skipanalínu.
 
+Ef fjarlægja vill þýðandann þarf aðeins að fjarlægja |mm-compiler| úr
+|.cabal/bin|, ásamt viðeigandi möppum úr |.cabal/store|
+(þ.e.~möppum sem byrja á |mm-compiler|, ásamt möppum sem byrja á |alex|
+eða |happy| ef hvorugt er notað annars staðar).
+
 \subsection{Notkun}
 Þýðing og keyrsla MicroMorpho forrita með þýðandanum |mm-compiler|
 krefst þess að Java sé sett upp (sjá \href{https://www.java.com/en/}{heimasíðu Java}).
@@ -145,6 +150,8 @@ Til þess að sýna notkun þýðandans skulum við skrifa einfalt
 MicroMorpho forrit.
 Við byrjum á því að búa til skrána |hello.mm| eins og að neðan.
 \medskip
+
+\newpage
 
 \colorbox{gray!75}{\hspace*{9pt}|hello.mm|\hspace{9pt}}\vspace{-10pt}\par%
 \begin{mdframed}[style=langframe,topline=true]
