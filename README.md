@@ -28,7 +28,7 @@ variable to enable running the compiler from the command line.
 ## Uninstallation
 
 To uninstall this compiler, simply remove the `.cabal` directory
-specified above. If this is not desirable (e.g.~if other executables
+specified above. If this is not desirable (e.g. if other executables
 or libraries in use are found there), simply remove `mm-compiler`
 from `.cabal/bin` and the appropriate directories from `.cabal/store`.
 
