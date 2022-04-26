@@ -3,11 +3,11 @@ Usage:
     mm-compiler {<option>|<file>} ...
     mm-compiler run <file> ...
 
-This program provides commands to lex, parses and compiles MicroMorpho programs,
+This program provides commands to lex, parses and compile MicroMorpho programs,
 in addition to executing them using the Morpho Virtual Machine.
 
 When invoked with the first argument `run', this program is used in run mode.
-In run mode, the Morpho Virtual Machine is levereged to execute the input files.
+In run mode, the input file(s) are executed using the Morpho Virtual Machine.
 Files to be executed must have the extension `.mexe'. If an argument
 does not have the extension `.mexe', it is added.
 No options are allowed (except for `-h'/`--help') in run mode.
@@ -53,5 +53,5 @@ Options:
                                 this option append to the list of output files.
                                 If the list of output files is longer than the
                                 list of input files, the trailing output files
-                                are ignored. If it is shorter, the trailing
-                                input files are given their default outputs.
+                                are ignored. If it is shorter, the remaining
+                                input files are mapped to their default outputs.
