@@ -13,7 +13,9 @@ along with a Haskell compiler. It should suffice to install
 
 Now, simply run the following command in the project's root directory:
 
-> cabal install
+```
+cabal install
+```
 
 This creates an executable `mm-compiler` and places it
 in `$HOME/.cabal/bin/` on UNIX machines and
@@ -36,16 +38,22 @@ To illustrate the use of this compiler, let us write a simple program in MicroMo
 
 Begin by placing the following in the file `hello.mm`:
 
-> writeln("Hello, world!");
+```
+writeln("Hello, world!");
+```
 
 Now, compile the program using the command below:
 
-> $ mm-compiler hello.mm
+```
+$ mm-compiler hello.mm
+```
 
 Finally, run the program:
 
-> $ mm-compiler run hello.mexe
-> Hello, world!
+```
+$ mm-compiler run hello.mexe
+Hello, world!
+```
 
 ## Further information
 
@@ -55,4 +63,6 @@ can be found in `doc/manual/main.pdf`.
 To see a comprehensive summary of the compilers uses,
 call the compiler with the `--help` option.
 
-> $ mm-compiler --help
+```
+$ mm-compiler --help
+```
