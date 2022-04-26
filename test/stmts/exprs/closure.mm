@@ -1,0 +1,1 @@
+writeln(fun () { null });
