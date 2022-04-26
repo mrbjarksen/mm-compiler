@@ -7,7 +7,7 @@ import Compiler.Utils
 
 import System.Environment (getArgs)
 import System.Exit (exitSuccess, exitFailure)
-import System.FilePath ((-<.>), (<.>), dropExtension, isExtensionOf)
+import System.FilePath ((-<.>), (<.>), (</>), dropExtension, isExtensionOf)
 import System.Directory (doesFileExist)
 import System.Process (callCommand)
 import System.IO (Handle, IOMode(..), stdin, stdout, openFile, hPutStr, hPrint, hClose)
@@ -18,7 +18,7 @@ import Paths_mm_compiler (getDataFileName)
 import Data.Text (Text)
 import qualified Data.Text.IO as TIO
 
-import Control.Monad (foldM, unless)
+import Control.Monad (foldM, when, unless)
 import Control.Monad.State (runStateT, evalStateT)
 
 import Data.List (break)
@@ -134,7 +134,7 @@ failure msg = mapM_ putStrLn
     ] >> exitFailure
 
 showHelp :: IO ()
-showHelp = getDataFileName "help.txt" >>= TIO.readFile >>= TIO.putStrLn >> exitSuccess
+showHelp = getDataFileName "help.txt"    >>= TIO.readFile >>= TIO.putStrLn >> exitSuccess
 
 showInfo :: IO ()
 showInfo = getDataFileName "Parser.info" >>= TIO.readFile >>= TIO.putStrLn >> exitSuccess
@@ -179,14 +179,12 @@ outputMachineCode a@(input, output) = withMachineCode a $ \txt -> do
 
 outputExecutable :: (FilePath, FilePath) -> IO ()
 outputExecutable a@(input, output) = do
-    if output == "-"
-       then failure $ "cannot output executable to standard output" 
-       else withMachineCode a $ \txt -> do
-              oh <- outputHandle output
-              TIO.hPutStrLn oh txt
-              hClose oh
-              morpho <- getDataFileName "morpho.jar"
-              callCommand $ "java -jar " ++ morpho ++ " -c \"" ++ output ++ "\""
+    when (output == "-") $ failure $ "cannot output executable to standard output" 
+    withMachineCode a $ \txt -> do
+        oh <- outputHandle output
+        TIO.hPutStrLn oh txt
+        hClose oh
+        callMorpho $ "-c \"" ++ output ++ "\""
 
 ifExists :: FilePath -> IO a -> IO a
 ifExists file cont = do
@@ -219,9 +217,13 @@ runPrograms args
 
 run :: FilePath -> IO ()
 run "-" = failure $ "cannot run executable from standard input"
-run fp  = let file = if "mexe" `isExtensionOf` fp then fp else fp <.> "mexe" in do
+run fp  = let file = if "mexe" `isExtensionOf` fp then fp else fp <.> "mexe" in
+    ifExists file $ callMorpho $ "\"" ++ dropExtension file ++ "\""
+
+callMorpho :: String -> IO ()
+callMorpho cmd = do
     morpho <- getDataFileName "morpho.jar"
-    ifExists file $ callCommand $ "java -jar " ++ morpho ++ " \"" ++ dropExtension file ++ "\""
+    callCommand $ "java -jar \"" ++ morpho ++ "\" " ++ cmd
 
 ---- main ----
 

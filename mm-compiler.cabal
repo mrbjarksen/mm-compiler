@@ -21,7 +21,8 @@ maintainer:         bjarki31@gmail.com
 -- category:
 --extra-source-files:
 
-data-dir: data
+data-dir:   data
+data-files: help.txt, Parser.info, morpho.jar
 
 executable mm-compiler
     main-is:            Main.hs
